@@ -123,7 +123,7 @@ class ActorCritic:
             cur_states, actions, rewards, new_states, _ =  stack_samples(samples)
             predicted_actions = self.actor_model.predict(cur_states)
             predicted_actions[0][0] = predicted_actions[0][0]*1.4
-            predicted_actions[0][1] = predicted_actions[0][1]*np.pi
+            predicted_actions[0][1] = predicted_actions[0][1]*np.pi/2
             grads = self.sess.run(self.critic_grads, feed_dict={
                 self.critic_state_input:  cur_states,
                 self.critic_action_input: predicted_actions
@@ -138,7 +138,7 @@ class ActorCritic:
         cur_states, actions, rewards, new_states, dones = stack_samples(samples)
         target_actions = self.target_actor_model.predict(new_states)
         target_actions[0][0] = target_actions[0][0]*1.4
-        target_actions[0][1] = target_actions[0][1]*np.pi
+        target_actions[0][1] = target_actions[0][1]*np.pi/2
         future_rewards = self.target_critic_model.predict([new_states, target_actions])
         
         rewards += self.gamma * future_rewards * (1 - dones)
@@ -191,7 +191,7 @@ class ActorCritic:
             return self.env.action_space.sample()'''
         predicted_actions = self.actor_model.predict(cur_state)
         predicted_actions[0][0] = predicted_actions[0][0]*1.4
-        predicted_actions[0][1] = predicted_actions[0][1]*np.pi
+        predicted_actions[0][1] = predicted_actions[0][1]*np.pi/2
         
         return predicted_actions
 
@@ -224,7 +224,7 @@ sess = tf.Session()
 K.set_session(sess)
 env = gym.make("usv-asmc-ca-v0")
 actor_critic = ActorCritic(env, sess)
-actor_noise = OrnsteinUhlenbeckActionNoise(mu=np.zeros(1))
+actor_noise = OrnsteinUhlenbeckActionNoise(mu=np.zeros(2))
 
 num_trials = 1500
 trial_len  = 400
@@ -244,20 +244,19 @@ for i in range(num_trials):
     cur_state = env.reset()
     action = env.action_space.sample()
     reward_sum = 0.
-    action0_last = env.state[32]
-    action1_last = env.state[33]
     for j in range(trial_len):
         #env.render()
         cur_state = cur_state.reshape((1, env.observation_space.shape[0]))
         action = actor_critic.act(cur_state) + actor_noise()
-        action[0][0] = np.where(np.greater(action[0][0], 1.4), action[0][0]-1.4, action[0][0])
-        action[0][1] = np.where(np.greater(np.abs(action[0][1]), np.pi), (np.sign(action[0][1]))*(np.abs(action[0][1])-2*np.pi), action[0][1])
+        action[0][0] = np.where(np.greater(action[0][0], 1.4), 1.4, action[0][0])
+        action[0][0] = np.where(np.less(action[0][0], 0.0), 0.0, action[0][0])
+        #action[0][1] = np.where(np.greater(np.abs(action[0][1]), np.pi), (np.sign(action[0][1]))*(np.abs(action[0][1])-2*np.pi), action[0][1])
+        #action[0][1] = np.where(np.greater(np.abs(action[0][1]), np.pi), 0.0, action[0][1])
+        action[0][1] = np.where(np.greater(np.abs(action[0][1]), np.pi/2), (np.sign(action[0][1]))*(np.abs(action[0][1])-np.pi), action[0][1])
         action = action.reshape((1, env.action_space.shape[0]))
 
         new_state, reward, done, _ = env.step(action[0])
 
-        action0_last = action[0][0]
-        action1_last = action[0][1]
         reward_sum += reward
         if j == (trial_len - 1):
             print("reward sum: " + str(reward_sum))
@@ -265,6 +264,9 @@ for i in range(num_trials):
         if done == True:
             print("reward sum: " + str(reward_sum))
             break
+
+        if (j % 10 == 0):
+            env.render()
 
         actor_critic.train()
         actor_critic.update_target()
@@ -278,8 +280,6 @@ for i in range(num_trials):
         print("Render")
         cur_state = env.reset()
         reward_sum = 0.
-        action0_last = env.state[32]
-        action1_last = env.state[33]
         env.render()
         for j in range(400):
             cur_state = cur_state.reshape((1, env.observation_space.shape[0]))
@@ -289,8 +289,6 @@ for i in range(num_trials):
             new_state, reward, done, _ = env.step(action[0])
             env.render()
 
-            action0_last = action[0][0]
-            action1_last = action[0][1]
             reward_sum += reward
             if j == (400 - 1):
                 print("reward: " + str(reward))
