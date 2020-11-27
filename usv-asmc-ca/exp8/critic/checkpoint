@@ -1,0 +1,2 @@
+model_checkpoint_path: "critic800"
+all_model_checkpoint_paths: "critic800"
