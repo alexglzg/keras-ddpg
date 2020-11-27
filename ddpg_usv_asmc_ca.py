@@ -121,7 +121,9 @@ class ActorCritic:
 
     def _train_actor(self, samples):
             cur_states, actions, rewards, new_states, _ =  stack_samples(samples)
-            predicted_actions = self.actor_model.predict(cur_states)*np.pi/2
+            predicted_actions = self.actor_model.predict(cur_states)
+            predicted_actions[0][0] = predicted_actions[0][0]*1.4
+            predicted_actions[0][1] = predicted_actions[0][1]*np.pi
             grads = self.sess.run(self.critic_grads, feed_dict={
                 self.critic_state_input:  cur_states,
                 self.critic_action_input: predicted_actions
@@ -134,7 +136,9 @@ class ActorCritic:
 
     def _train_critic(self, samples):
         cur_states, actions, rewards, new_states, dones = stack_samples(samples)
-        target_actions = self.target_actor_model.predict(new_states)*np.pi/2
+        target_actions = self.target_actor_model.predict(new_states)
+        target_actions[0][0] = target_actions[0][0]*1.4
+        target_actions[0][1] = target_actions[0][1]*np.pi
         future_rewards = self.target_critic_model.predict([new_states, target_actions])
         
         rewards += self.gamma * future_rewards * (1 - dones)
@@ -185,7 +189,11 @@ class ActorCritic:
         '''self.epsilon *= self.epsilon_decay
         if np.random.random() < self.epsilon:
             return self.env.action_space.sample()'''
-        return self.actor_model.predict(cur_state)*np.pi/2
+        predicted_actions = self.actor_model.predict(cur_state)
+        predicted_actions[0][0] = predicted_actions[0][0]*1.4
+        predicted_actions[0][1] = predicted_actions[0][1]*np.pi
+        
+        return predicted_actions
 
 
 # Taken from https://github.com/openai/baselines/blob/master/baselines/ddpg/noise.py, which is
@@ -242,7 +250,8 @@ for i in range(num_trials):
         #env.render()
         cur_state = cur_state.reshape((1, env.observation_space.shape[0]))
         action = actor_critic.act(cur_state) + actor_noise()
-        action[0][1] = np.where(np.greater(np.abs(action[0][1]), np.pi/2), (np.sign(action[0][1]))*(np.abs(action[0][1])-np.pi), action[0][1])
+        action[0][0] = np.where(np.greater(action[0][0], 1.4), action[0][0]-1.4, action[0][0])
+        action[0][1] = np.where(np.greater(np.abs(action[0][1]), np.pi), (np.sign(action[0][1]))*(np.abs(action[0][1])-2*np.pi), action[0][1])
         action = action.reshape((1, env.action_space.shape[0]))
 
         new_state, reward, done, _ = env.step(action[0])
@@ -286,13 +295,17 @@ for i in range(num_trials):
             if j == (400 - 1):
                 print("reward: " + str(reward))
                 print("reward sum: " + str(reward_sum))
-                print("u: " + str(env.state[0]) + " u_d: " + str(env.state[6]))
+                print("u: " + str(env.state[0]) + " u_ref: " + str(env.state[6]))
+                print("u_d: " + str(action[0][0]) + " psi_d: " + str(action[0][1]))
+                print("u_d_last: " + str(cur_state[0][32]) + " psi_d_last: " + str(cur_state[0][33]))
                 print("y_e: " + str(env.state[3]))
             
             if done == True:
                 print("reward: " + str(reward))
                 print("reward sum: " + str(reward_sum))
-                print("u: " + str(env.state[0]) + " u_d: " + str(env.state[6]))
+                print("u: " + str(env.state[0]) + " u_ref: " + str(env.state[6]))
+                print("u_d: " + str(action[0][0]) + " psi_d: " + str(action[0][1]))
+                print("u_d_last: " + str(cur_state[0][32]) + " psi_d_last: " + str(cur_state[0][33]))
                 print("y_e: " + str(env.state[3]))
                 break
 
