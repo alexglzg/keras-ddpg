@@ -229,7 +229,7 @@ actor_noise = OrnsteinUhlenbeckActionNoise(mu=np.zeros(2))
 num_trials = 1500
 trial_len  = 400
 
-starting_weights = 0
+starting_weights = 100
 if starting_weights == 0:
     print("Starting on new weights")
 else:
@@ -248,8 +248,8 @@ for i in range(num_trials):
         #env.render()
         cur_state = cur_state.reshape((1, env.observation_space.shape[0]))
         action = actor_critic.act(cur_state) + actor_noise()
-        action[0][0] = np.where(np.greater(action[0][0], 1.4), 1.4, action[0][0])
-        action[0][0] = np.where(np.less(action[0][0], 0.0), 0.0, action[0][0])
+        action[0][0] = np.where(np.greater(action[0][0], 1.4), env.state[6], action[0][0])
+        action[0][0] = np.where(np.less(action[0][0], 0.0), env.state[6], action[0][0])
         #action[0][1] = np.where(np.greater(np.abs(action[0][1]), np.pi), (np.sign(action[0][1]))*(np.abs(action[0][1])-2*np.pi), action[0][1])
         #action[0][1] = np.where(np.greater(np.abs(action[0][1]), np.pi), 0.0, action[0][1])
         action[0][1] = np.where(np.greater(np.abs(action[0][1]), np.pi/2), (np.sign(action[0][1]))*(np.abs(action[0][1])-np.pi), action[0][1])

@@ -223,7 +223,7 @@ class OrnsteinUhlenbeckActionNoise:
 
 sess = tf.Session()
 K.set_session(sess)
-env = gym.make("usv-pid-v0")
+env = gym.make("usv-asmc-v0")
 actor_critic = ActorCritic(env, sess)
 actor_noise = OrnsteinUhlenbeckActionNoise(mu=np.zeros(1))
 
