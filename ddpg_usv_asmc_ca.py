@@ -122,8 +122,8 @@ class ActorCritic:
     def _train_actor(self, samples):
             cur_states, actions, rewards, new_states, _ =  stack_samples(samples)
             predicted_actions = self.actor_model.predict(cur_states)
-            predicted_actions[0][0] = predicted_actions[0][0]*1.4
-            predicted_actions[0][1] = predicted_actions[0][1]*np.pi/2
+            #predicted_actions[0][0] = predicted_actions[0][0]*1.4
+            #predicted_actions[0][1] = predicted_actions[0][1]*np.pi#/2
             grads = self.sess.run(self.critic_grads, feed_dict={
                 self.critic_state_input:  cur_states,
                 self.critic_action_input: predicted_actions
@@ -137,8 +137,8 @@ class ActorCritic:
     def _train_critic(self, samples):
         cur_states, actions, rewards, new_states, dones = stack_samples(samples)
         target_actions = self.target_actor_model.predict(new_states)
-        target_actions[0][0] = target_actions[0][0]*1.4
-        target_actions[0][1] = target_actions[0][1]*np.pi/2
+        #target_actions[0][0] = target_actions[0][0]*1.4
+        #target_actions[0][1] = target_actions[0][1]*np.pi#/2
         future_rewards = self.target_critic_model.predict([new_states, target_actions])
         
         rewards += self.gamma * future_rewards * (1 - dones)
@@ -190,9 +190,9 @@ class ActorCritic:
         if np.random.random() < self.epsilon:
             return self.env.action_space.sample()'''
         predicted_actions = self.actor_model.predict(cur_state)
-        predicted_actions[0][0] = predicted_actions[0][0]*1.4
-        predicted_actions[0][1] = predicted_actions[0][1]*np.pi/2
-        
+        #predicted_actions[0][0] = predicted_actions[0][0]*1.4
+        #predicted_actions[0][1] = predicted_actions[0][1]*np.pi#/2
+
         return predicted_actions
 
 
@@ -229,7 +229,7 @@ actor_noise = OrnsteinUhlenbeckActionNoise(mu=np.zeros(2))
 num_trials = 1500
 trial_len  = 400
 
-starting_weights = 100
+starting_weights = 0
 if starting_weights == 0:
     print("Starting on new weights")
 else:
@@ -248,14 +248,21 @@ for i in range(num_trials):
         #env.render()
         cur_state = cur_state.reshape((1, env.observation_space.shape[0]))
         action = actor_critic.act(cur_state) + actor_noise()
-        action[0][0] = np.where(np.greater(action[0][0], 1.4), env.state[6], action[0][0])
-        action[0][0] = np.where(np.less(action[0][0], 0.0), env.state[6], action[0][0])
+        #action[0][0] = np.where(np.greater(action[0][0], 1.4), env.state[6], action[0][0])
+        #action[0][0] = np.where(np.less(action[0][0], 0.0), env.state[6], action[0][0])
         #action[0][1] = np.where(np.greater(np.abs(action[0][1]), np.pi), (np.sign(action[0][1]))*(np.abs(action[0][1])-2*np.pi), action[0][1])
-        #action[0][1] = np.where(np.greater(np.abs(action[0][1]), np.pi), 0.0, action[0][1])
-        action[0][1] = np.where(np.greater(np.abs(action[0][1]), np.pi/2), (np.sign(action[0][1]))*(np.abs(action[0][1])-np.pi), action[0][1])
+        #action[0][1] = np.where(np.greater(np.abs(action[0][1]), np.pi), 0.0, action[0][1])/2
+        #action[0][1] = np.where(np.greater(np.abs(action[0][1]), np.pi/2), (np.sign(action[0][1]))*(np.abs(action[0][1])-np.pi), action[0][1])
+        action[0][0] = np.where(np.greater(action[0][0], 1.0), env.state[6]/1.4, action[0][0])
+        action[0][0] = np.where(np.less(action[0][0], 0.0), env.state[6]/1.4, action[0][0])
+        action[0][1] = np.where(np.greater(np.abs(action[0][1]), 1.0), 0.0, action[0][1])
         action = action.reshape((1, env.action_space.shape[0]))
 
-        new_state, reward, done, _ = env.step(action[0])
+        act = action
+        act[0][0] = act[0][0]*1.4
+        act[0][1] = act[0][1]*np.pi
+        #new_state, reward, done, _ = env.step(action[0])
+        new_state, reward, done, _ = env.step(act[0])
 
         reward_sum += reward
         if j == (trial_len - 1):
@@ -286,7 +293,11 @@ for i in range(num_trials):
             action = actor_critic.act(cur_state)
             action = action.reshape((1, env.action_space.shape[0]))
 
-            new_state, reward, done, _ = env.step(action[0])
+            act = action
+            act[0][0] = act[0][0]*1.4
+            act[0][1] = act[0][1]*np.pi
+            #new_state, reward, done, _ = env.step(action[0])
+            new_state, reward, done, _ = env.step(act[0])
             env.render()
 
             reward_sum += reward
@@ -294,7 +305,8 @@ for i in range(num_trials):
                 print("reward: " + str(reward))
                 print("reward sum: " + str(reward_sum))
                 print("u: " + str(env.state[0]) + " u_ref: " + str(env.state[6]))
-                print("u_d: " + str(action[0][0]) + " psi_d: " + str(action[0][1]))
+                #print("u_d: " + str(action[0][0]) + " psi_d: " + str(action[0][1]))
+                print("u_d: " + str(act[0][0]) + " psi_d: " + str(act[0][1]))
                 print("u_d_last: " + str(cur_state[0][32]) + " psi_d_last: " + str(cur_state[0][33]))
                 print("y_e: " + str(env.state[3]))
             
@@ -302,7 +314,8 @@ for i in range(num_trials):
                 print("reward: " + str(reward))
                 print("reward sum: " + str(reward_sum))
                 print("u: " + str(env.state[0]) + " u_ref: " + str(env.state[6]))
-                print("u_d: " + str(action[0][0]) + " psi_d: " + str(action[0][1]))
+                #print("u_d: " + str(action[0][0]) + " psi_d: " + str(action[0][1]))
+                print("u_d: " + str(act[0][0]) + " psi_d: " + str(act[0][1]))
                 print("u_d_last: " + str(cur_state[0][32]) + " psi_d_last: " + str(cur_state[0][33]))
                 print("y_e: " + str(env.state[3]))
                 break
@@ -311,8 +324,34 @@ for i in range(num_trials):
 
             actor_critic.remember(cur_state, action, reward, new_state, done)
             cur_state = new_state
+        
+    if (i % 10 == 0):
+        cur_state = env.reset()
+        reward_sum = 0
+        for j in range(trial_len):
+            cur_state = cur_state.reshape((1, env.observation_space.shape[0]))
+            action = actor_critic.act(cur_state)
+            action = action.reshape((1, env.action_space.shape[0]))
+            los = np.math.atan(-env.state[3]/2)
+            action[0][0] = env.state[6]/1.4
+            action[0][1] = los/np.pi
+            new_state, reward, done, _ = env.step([env.state[6],los])
+            env.render()
 
-    if (i % 100 == 0 and i > 1):
+            reward_sum += reward
+            if j == (trial_len - 1):
+                print("LOS")
+                print("reward: " + str(reward))
+                print("reward sum: " + str(reward_sum))
+                print("y_e: " + str(env.state[3]))
+
+            new_state = new_state.reshape((1, env.observation_space.shape[0]))
+
+            actor_critic.remember(cur_state, action, reward, new_state, done)
+            cur_state = new_state
+
+
+    if ((i + starting_weights) % 100 == 0 and i > 1):
         actor_critic.actor_model.save_weights("./ddpg_models/iteration" + str(i + starting_weights))
         actor_critic.critic_model.save_weights("./ddpg_models/critic/critic" + str(i + starting_weights))
         actor_critic.target_actor_model.save_weights("./ddpg_models/target_actor/target_actor" + str(i + starting_weights))

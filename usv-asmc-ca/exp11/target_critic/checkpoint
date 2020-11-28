@@ -1,2 +1,2 @@
-model_checkpoint_path: "target_critic171"
-all_model_checkpoint_paths: "target_critic171"
+model_checkpoint_path: "target_critic576"
+all_model_checkpoint_paths: "target_critic576"
