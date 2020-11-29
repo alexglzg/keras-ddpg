@@ -1,2 +1,2 @@
-model_checkpoint_path: "target_actor576"
-all_model_checkpoint_paths: "target_actor576"
+model_checkpoint_path: "target_actor1600"
+all_model_checkpoint_paths: "target_actor1600"

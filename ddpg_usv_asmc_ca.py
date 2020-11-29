@@ -89,7 +89,7 @@ class ActorCritic:
         output_0 = Dense(1, activation='sigmoid', kernel_initializer=RandomUniform(-3e-3, 3e-3), bias_initializer=RandomUniform(-3e-3, 3e-3))(h2)
         output_1 = Dense(1, activation='tanh', kernel_initializer=RandomUniform(-3e-3, 3e-3), bias_initializer=RandomUniform(-3e-3, 3e-3))(h2)
         output = Concatenate()([output_0, output_1])
-
+        
         model = Model(inputs=state_input, outputs=output)
         adam  = Adam(lr=0.0001)
         model.compile(loss="mse", optimizer=adam)
@@ -229,7 +229,7 @@ actor_noise = OrnsteinUhlenbeckActionNoise(mu=np.zeros(2))
 num_trials = 1500
 trial_len  = 400
 
-starting_weights = 0
+starting_weights = 576
 if starting_weights == 0:
     print("Starting on new weights")
 else:
@@ -283,7 +283,7 @@ for i in range(num_trials):
         actor_critic.remember(cur_state, action, reward, new_state, done)
         cur_state = new_state
 
-    if (i % 5 == 0):
+    if ((i + starting_weights) % 5 == 0):
         print("Render")
         cur_state = env.reset()
         reward_sum = 0.
@@ -324,32 +324,6 @@ for i in range(num_trials):
 
             actor_critic.remember(cur_state, action, reward, new_state, done)
             cur_state = new_state
-        
-    if (i % 10 == 0):
-        cur_state = env.reset()
-        reward_sum = 0
-        for j in range(trial_len):
-            cur_state = cur_state.reshape((1, env.observation_space.shape[0]))
-            action = actor_critic.act(cur_state)
-            action = action.reshape((1, env.action_space.shape[0]))
-            los = np.math.atan(-env.state[3]/2)
-            action[0][0] = env.state[6]/1.4
-            action[0][1] = los/np.pi
-            new_state, reward, done, _ = env.step([env.state[6],los])
-            env.render()
-
-            reward_sum += reward
-            if j == (trial_len - 1):
-                print("LOS")
-                print("reward: " + str(reward))
-                print("reward sum: " + str(reward_sum))
-                print("y_e: " + str(env.state[3]))
-
-            new_state = new_state.reshape((1, env.observation_space.shape[0]))
-
-            actor_critic.remember(cur_state, action, reward, new_state, done)
-            cur_state = new_state
-
 
     if ((i + starting_weights) % 100 == 0 and i > 1):
         actor_critic.actor_model.save_weights("./ddpg_models/iteration" + str(i + starting_weights))

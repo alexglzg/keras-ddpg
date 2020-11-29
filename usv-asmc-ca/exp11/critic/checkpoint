@@ -1,2 +1,2 @@
-model_checkpoint_path: "critic576"
-all_model_checkpoint_paths: "critic576"
+model_checkpoint_path: "critic1600"
+all_model_checkpoint_paths: "critic1600"
