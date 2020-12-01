@@ -196,132 +196,141 @@ class ActorCritic:
         return predicted_actions
 
 
-# Taken from https://github.com/openai/baselines/blob/master/baselines/ddpg/noise.py, which is
-# based on http://math.stackexchange.com/questions/1287634/implementing-ornstein-uhlenbeck-in-matlab
-class OrnsteinUhlenbeckActionNoise:
-    def __init__(self, mu, sigma=0.3, theta=.15, dt=1e-2, x0=None):
-        self.theta = theta
-        self.mu = mu
-        self.sigma = sigma
-        self.dt = dt
-        self.x0 = x0
-        self.reset()
-
-    def __call__(self):
-        x = self.x_prev + self.theta * (self.mu - self.x_prev) * self.dt + \
-                self.sigma * np.sqrt(self.dt) * np.random.normal(size=self.mu.shape)
-        self.x_prev = x
-        return x
-
-    def reset(self):
-        self.x_prev = self.x0 if self.x0 is not None else np.zeros_like(self.mu)
-
-    def __repr__(self):
-        return 'OrnsteinUhlenbeckActionNoise(mu={}, sigma={})'.format(self.mu, self.sigma)
+## Taken from https://github.com/openai/baselines/blob/master/baselines/ddpg/noise.py, which is
+## based on http://math.stackexchange.com/questions/1287634/implementing-ornstein-uhlenbeck-in-matlab
+#class OrnsteinUhlenbeckActionNoise:
+#    def __init__(self, mu, sigma=0.3, theta=.15, dt=1e-2, x0=None):
+#        self.theta = theta
+#        self.mu = mu
+#        self.sigma = sigma
+#        self.dt = dt
+#        self.x0 = x0
+#        self.reset()
+#
+#    def __call__(self):
+#        x = self.x_prev + self.theta * (self.mu - self.x_prev) * self.dt + \
+#                self.sigma * np.sqrt(self.dt) * np.random.normal(size=self.mu.shape)
+#        self.x_prev = x
+#        return x
+#
+#    def reset(self):
+#        self.x_prev = self.x0 if self.x0 is not None else np.zeros_like(self.mu)
+#
+#    def __repr__(self):
+#        return 'OrnsteinUhlenbeckActionNoise(mu={}, sigma={})'.format(self.mu, self.sigma)
 
 
 sess = tf.Session()
 K.set_session(sess)
 env = gym.make("usv-asmc-ca-v0")
 actor_critic = ActorCritic(env, sess)
-actor_noise = OrnsteinUhlenbeckActionNoise(mu=np.zeros(2))
+#actor_noise = OrnsteinUhlenbeckActionNoise(mu=np.zeros(2))
 
-num_trials = 3000
+#num_trials = 3000
 trial_len  = 600
+#
+starting_weights = 5800
+#if starting_weights == 0:
+#   print("Starting on new weights")
+#else:
+actor_critic.actor_model.load_weights("./ddpg_models/iteration" + str(starting_weights))
+actor_critic.critic_model.load_weights("./ddpg_models/critic/critic" + str(starting_weights))
+actor_critic.target_actor_model.load_weights("./ddpg_models/target_actor/target_actor" + str(starting_weights))
+actor_critic.target_critic_model.load_weights("./ddpg_models/target_critic/target_critic" + str(starting_weights))
+print("Weights: " + str(starting_weights))
 
-starting_weights = 2900
-if starting_weights == 0:
-    print("Starting on new weights")
-else:
-    actor_critic.actor_model.load_weights("./ddpg_models/iteration" + str(starting_weights))
-    actor_critic.critic_model.load_weights("./ddpg_models/critic/critic" + str(starting_weights))
-    actor_critic.target_actor_model.load_weights("./ddpg_models/target_actor/target_actor" + str(starting_weights))
-    actor_critic.target_critic_model.load_weights("./ddpg_models/target_critic/target_critic" + str(starting_weights))
-    print("Weights: " + str(starting_weights))
+#for i in range(num_trials):
+#    print("trial: " + str(i + starting_weights))
+#    cur_state = env.reset()
+#    action = env.action_space.sample()
+#    reward_sum = 0.
+#    action0_last = env.state[32]
+#    action1_last = env.state[33]
+#    for j in range(trial_len):
+#        #env.render()
+#        cur_state = cur_state.reshape((1, env.observation_space.shape[0]))
+#        if i % 2 == 0:
+#            action = actor_critic.act(cur_state) + actor_noise()
+#        else:
+#            action = actor_critic.act(cur_state) 
+#        action[0][0] = np.where(np.greater(action[0][0], 1.4), 1.4, action[0][0])
+#        action[0][0] = np.where(np.less(action[0][0], 0.0), 0.0, action[0][0])
+#        #action[0][1] = np.where(np.greater(np.abs(action[0][1]), np.pi), (np.sign(action[0][1]))*(np.abs(action[0][1])-2*np.pi), action[0][1])
+#        action[0][1] = np.where(np.greater_equal(np.abs(action[0][1]), np.pi), 0.0, action[0][1])
+#        action = action.reshape((1, env.action_space.shape[0]))
+#
+#        new_state, reward, done, _ = env.step(action[0])
+#
+#        action0_last = action[0][0]
+#        action1_last = action[0][1]
+#        reward_sum += reward
+#        if j == (trial_len - 1):
+#            print("reward sum: " + str(reward_sum))
+#
+#        if done == True:
+#            print("reward sum: " + str(reward_sum))
+#            break
+#
+#        if (j % 10 == 0):
+#            env.render()
+#
+#        actor_critic.train()
+#        actor_critic.update_target()
+#        
+#        new_state = new_state.reshape((1, env.observation_space.shape[0]))
+#
+#        actor_critic.remember(cur_state, action, reward, new_state, done)
+#        cur_state = new_state
 
-for i in range(num_trials):
-    print("trial: " + str(i + starting_weights))
+    #if (i % 5 == 0):
+contador = 0
+num_experiementos = 100
+for i in range (num_experiementos):
+    print("Render: " + str(i))
     cur_state = env.reset()
-    action = env.action_space.sample()
     reward_sum = 0.
     action0_last = env.state[32]
     action1_last = env.state[33]
+    env.render()
     for j in range(trial_len):
-        #env.render()
         cur_state = cur_state.reshape((1, env.observation_space.shape[0]))
-        if i % 2 == 0:
-            action = actor_critic.act(cur_state) + actor_noise()
-        else:
-            action = actor_critic.act(cur_state) 
-        action[0][0] = np.where(np.greater(action[0][0], 1.4), 1.4, action[0][0])
-        action[0][0] = np.where(np.less(action[0][0], 0.0), 0.0, action[0][0])
-        #action[0][1] = np.where(np.greater(np.abs(action[0][1]), np.pi), (np.sign(action[0][1]))*(np.abs(action[0][1])-2*np.pi), action[0][1])
-        action[0][1] = np.where(np.greater_equal(np.abs(action[0][1]), np.pi), 0.0, action[0][1])
+        action = actor_critic.act(cur_state)
         action = action.reshape((1, env.action_space.shape[0]))
 
         new_state, reward, done, _ = env.step(action[0])
+        env.render()
 
         action0_last = action[0][0]
         action1_last = action[0][1]
         reward_sum += reward
         if j == (trial_len - 1):
+            print("reward: " + str(reward))
             print("reward sum: " + str(reward_sum))
-
-        if done == True:
-            print("reward sum: " + str(reward_sum))
-            break
-
-        if (j % 10 == 0):
-            env.render()
-
-        actor_critic.train()
-        actor_critic.update_target()
+            print("u: " + str(env.state[0]) + " u_ref: " + str(env.state[6]))
+            print("u_d: " + str(action[0][0]) + " e_psi: " + str(action[0][1]))
+            print("y_e: " + str(env.state[3]))
+            print("contador: " + str(contador))
         
+        if done == True:
+            if reward == -1000:
+                contador = contador + 1
+            print("reward: " + str(reward))
+            print("reward sum: " + str(reward_sum))
+            print("u: " + str(env.state[0]) + " u_ref: " + str(env.state[6]))
+            print("u_d: " + str(action[0][0]) + " psi_d: " + str(action[0][1]))
+            print("y_e: " + str(env.state[3]))
+            print("contador: " + str(contador))
+            break
+        
+
+
         new_state = new_state.reshape((1, env.observation_space.shape[0]))
 
-        actor_critic.remember(cur_state, action, reward, new_state, done)
+        #actor_critic.remember(cur_state, action, reward, new_state, done)
         cur_state = new_state
 
-    if (i % 5 == 0):
-        print("Render")
-        cur_state = env.reset()
-        reward_sum = 0.
-        action0_last = env.state[32]
-        action1_last = env.state[33]
-        env.render()
-        for j in range(trial_len):
-            cur_state = cur_state.reshape((1, env.observation_space.shape[0]))
-            action = actor_critic.act(cur_state)
-            action = action.reshape((1, env.action_space.shape[0]))
-
-            new_state, reward, done, _ = env.step(action[0])
-            env.render()
-
-            action0_last = action[0][0]
-            action1_last = action[0][1]
-            reward_sum += reward
-            if j == (trial_len - 1):
-                print("reward: " + str(reward))
-                print("reward sum: " + str(reward_sum))
-                print("u: " + str(env.state[0]) + " u_ref: " + str(env.state[6]))
-                print("u_d: " + str(action[0][0]) + " e_psi: " + str(action[0][1]))
-                print("y_e: " + str(env.state[3]))
-            
-            if done == True:
-                print("reward: " + str(reward))
-                print("reward sum: " + str(reward_sum))
-                print("u: " + str(env.state[0]) + " u_ref: " + str(env.state[6]))
-                print("u_d: " + str(action[0][0]) + " psi_d: " + str(action[0][1]))
-                print("y_e: " + str(env.state[3]))
-                break
-
-            new_state = new_state.reshape((1, env.observation_space.shape[0]))
-
-            actor_critic.remember(cur_state, action, reward, new_state, done)
-            cur_state = new_state
-
-    if (i % 100 == 0 and i > 1):
-        actor_critic.actor_model.save_weights("./ddpg_models/iteration" + str(i + starting_weights))
-        actor_critic.critic_model.save_weights("./ddpg_models/critic/critic" + str(i + starting_weights))
-        actor_critic.target_actor_model.save_weights("./ddpg_models/target_actor/target_actor" + str(i + starting_weights))
-        actor_critic.target_critic_model.save_weights("./ddpg_models/target_critic/target_critic" + str(i + starting_weights))
+#    if (i % 100 == 0 and i > 1):
+#        actor_critic.actor_model.save_weights("./ddpg_models/iteration" + str(i + starting_weights))
+#        actor_critic.critic_model.save_weights("./ddpg_models/critic/critic" + str(i + starting_weights))
+#        actor_critic.target_actor_model.save_weights("./ddpg_models/target_actor/target_actor" + str(i + starting_weights))
+#        actor_critic.target_critic_model.save_weights("./ddpg_models/target_critic/target_critic" + str(i + starting_weights))
