@@ -84,8 +84,8 @@ class ActorCritic:
 
     def create_actor_model(self):
         state_input = Input(shape=self.env.observation_space.shape)
-        h1 = Dense(400, activation='relu', bias_initializer='glorot_uniform')(state_input)
-        h2 = Dense(300, activation='relu', bias_initializer='glorot_uniform')(h1)
+        h1 = Dense(400, activation='tanh', bias_initializer='glorot_uniform')(state_input)
+        h2 = Dense(300, activation='tanh', bias_initializer='glorot_uniform')(h1)
         output_0 = Dense(1, activation='sigmoid', kernel_initializer=RandomUniform(-3e-3, 3e-3), bias_initializer=RandomUniform(-3e-3, 3e-3))(h2)
         output_1 = Dense(1, activation='tanh', kernel_initializer=RandomUniform(-3e-3, 3e-3), bias_initializer=RandomUniform(-3e-3, 3e-3))(h2)
         output = Concatenate()([output_0, output_1])
@@ -229,7 +229,7 @@ actor_noise = OrnsteinUhlenbeckActionNoise(mu=np.zeros(2))
 num_trials = 1500
 trial_len  = 400
 
-starting_weights = 576
+starting_weights = 400
 if starting_weights == 0:
     print("Starting on new weights")
 else:
@@ -283,12 +283,12 @@ for i in range(num_trials):
         actor_critic.remember(cur_state, action, reward, new_state, done)
         cur_state = new_state
 
-    if ((i + starting_weights) % 5 == 0):
+    if ((i + starting_weights) % 2 == 0):
         print("Render")
         cur_state = env.reset()
         reward_sum = 0.
         env.render()
-        for j in range(400):
+        for j in range(trial_len):
             cur_state = cur_state.reshape((1, env.observation_space.shape[0]))
             action = actor_critic.act(cur_state)
             action = action.reshape((1, env.action_space.shape[0]))
@@ -301,7 +301,7 @@ for i in range(num_trials):
             env.render()
 
             reward_sum += reward
-            if j == (400 - 1):
+            if j == (trial_len - 1):
                 print("reward: " + str(reward))
                 print("reward sum: " + str(reward_sum))
                 print("u: " + str(env.state[0]) + " u_ref: " + str(env.state[6]))
